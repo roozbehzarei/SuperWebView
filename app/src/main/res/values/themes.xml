@@ -1,0 +1,12 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="Theme.WebView" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/indigo_100</item>
+        <item name="colorPrimaryVariant">@color/indigo_50</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">@color/gray_300</item>
+        <!-- Customize your theme here. -->
+    </style>
+</resources>
