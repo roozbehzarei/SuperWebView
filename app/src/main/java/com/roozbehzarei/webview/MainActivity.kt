@@ -15,7 +15,7 @@ import com.roozbehzarei.webview.databinding.ActivityMainBinding
 /**
  * [WEBSITE] the URL of the website to be loaded by [webView]
  */
-private const val WEBSITE = "https://sarahzarei.com/"
+private const val WEBSITE = ""
 
 class MainActivity : AppCompatActivity() {
 
@@ -42,7 +42,6 @@ class MainActivity : AppCompatActivity() {
         }
         webView.loadUrl(WEBSITE)
 
-
         /**
          * Define Swipe-to-refresh behaviour
          */
@@ -53,6 +52,11 @@ class MainActivity : AppCompatActivity() {
                 webView.reload()
             }
         }
+
+        /**
+         * Define Swipe-to-refresh color scheme
+         */
+        binding.root.setColorSchemeResources(R.color.indigo_200)
 
         /**
          * Disable Swipe-to-refresh if [webView] is scrolling
@@ -112,6 +116,7 @@ class MainActivity : AppCompatActivity() {
             binding.root.isRefreshing = false
         }
 
+        @Deprecated("Deprecated in Java")
         override fun onReceivedError(
             view: WebView?,
             errorCode: Int,
