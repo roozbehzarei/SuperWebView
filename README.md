@@ -2,11 +2,14 @@
      SuperWebView
 </h1>
 <p align="center">
+     <a style="text-decoration:none" href="https://github.com/roozbehzarei/SuperWebView/commits/master">
+          <img src="https://img.shields.io/github/last-commit/roozbehzarei/superwebview?color=informational&label=last%20update" alt="License" />
+     </a>
      <a style="text-decoration:none" href="LICENSE">
-          <img src="https://img.shields.io/github/license/roozbehzarei/filester" alt="License" />
+          <img src="https://img.shields.io/github/license/roozbehzarei/superwebview" alt="License" />
      </a>
      <a style="text-decoration:none" href="CODE_OF_CONDUCT.md">
-          <img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg" alt="Code of Conduct" />
+          <img src="https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg" alt="Code of Conduct" />
      </a>
 </p>
 
@@ -35,6 +38,3 @@ SuperWebView is a ready-to-use WebView template to create an Android app from yo
 2. Replace default app icons with your own.
 
 *Optional*: Change the value of `javaScriptEnabled` to `false` in `MainActivity.kt` if your website doesn't contain any JavaScript elements.
-
-## License
-Filester is licensed under [GNU General Public License v3.0](LICENSE).
