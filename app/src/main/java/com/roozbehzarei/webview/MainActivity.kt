@@ -2,14 +2,20 @@ package com.roozbehzarei.webview
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebSettingsCompat.FORCE_DARK_OFF
+import androidx.webkit.WebSettingsCompat.FORCE_DARK_ON
+import androidx.webkit.WebViewFeature
 import com.roozbehzarei.webview.databinding.ActivityMainBinding
 
 /**
@@ -36,10 +42,25 @@ class MainActivity : AppCompatActivity() {
             // Tell the WebView to enable JavaScript execution.
             javaScriptEnabled = true
             // Enable DOM storage API.
-            domStorageEnabled = true
+            domStorageEnabled = false
             // Disable support for zooming using webView's on-screen zoom controls and gestures.
             setSupportZoom(false)
         }
+        //
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+            when (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+                Configuration.UI_MODE_NIGHT_YES -> {
+                    WebSettingsCompat.setForceDark(webView.settings, FORCE_DARK_ON)
+                }
+                Configuration.UI_MODE_NIGHT_NO, Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                    WebSettingsCompat.setForceDark(webView.settings, FORCE_DARK_OFF)
+                }
+                else -> {
+                    //
+                }
+            }
+        }
+
         webView.loadUrl(WEBSITE)
 
         /**
@@ -54,23 +75,31 @@ class MainActivity : AppCompatActivity() {
         }
 
         /**
-         * Define Swipe-to-refresh color scheme
+         * Theme Swipe-to-refresh layout
          */
-        binding.root.setColorSchemeResources(R.color.indigo_200)
+        val spinnerTypedValue = TypedValue()
+        theme.resolveAttribute(
+            com.google.android.material.R.attr.colorPrimary,
+            spinnerTypedValue,
+            true
+        )
+        val spinnerColor = spinnerTypedValue.resourceId
+        binding.root.setColorSchemeResources(spinnerColor)
+
+        val backgroundTypedValue = TypedValue()
+        theme.resolveAttribute(
+            com.google.android.material.R.attr.colorPrimaryContainer,
+            backgroundTypedValue,
+            true
+        )
+        val backgroundColor = backgroundTypedValue.resourceId
+        binding.root.setProgressBackgroundColorSchemeResource(backgroundColor)
 
         /**
          * Disable Swipe-to-refresh if [webView] is scrolling
          */
         webView.viewTreeObserver.addOnScrollChangedListener {
             binding.root.isEnabled = webView.scrollY == 0
-        }
-
-        binding.buttonRetry.setOnClickListener {
-            if (webView.url == null) {
-                webView.loadUrl(WEBSITE)
-            } else {
-                webView.reload()
-            }
         }
 
         setContentView(binding.root)
@@ -108,12 +137,14 @@ class MainActivity : AppCompatActivity() {
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
             super.onPageStarted(view, url, favicon)
             binding.webView.visibility = View.VISIBLE
-            binding.layoutError.visibility = View.GONE
+            binding.errorLayout.visibility = View.GONE
+            binding.progressIndicator.visibility = View.VISIBLE
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
             binding.root.isRefreshing = false
+            binding.progressIndicator.visibility = View.INVISIBLE
         }
 
         @Deprecated("Deprecated in Java")
@@ -125,8 +156,15 @@ class MainActivity : AppCompatActivity() {
         ) {
             super.onReceivedError(view, errorCode, description, failingUrl)
             binding.webView.visibility = View.GONE
-            binding.layoutError.visibility = View.VISIBLE
+            binding.errorLayout.visibility = View.VISIBLE
             binding.root.isEnabled = false
+            binding.retryButton.setOnClickListener {
+                if (webView.url == null) {
+                    webView.loadUrl(WEBSITE)
+                } else {
+                    webView.reload()
+                }
+            }
         }
 
     }

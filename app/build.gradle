@@ -41,12 +41,10 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.4.2'
     implementation 'com.google.android.material:material:1.6.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    // ViewModel
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
-    // LiveData
-    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
     // Activity
     implementation "androidx.activity:activity-ktx:$activity_version"
-    // Swiperefreshlayout
+    // SwipeRefreshLayout
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
+    // Webkit
+    implementation "androidx.webkit:webkit:1.4.0"
 }
