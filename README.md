@@ -17,8 +17,9 @@ SuperWebView is a ready-to-use WebView template to create an Android app from yo
 
 ### Features
 * Support Android 5.0+
-* Show error page in times of connectivity issues.
+* Progress bar to indicate a webpage is being loaded.
 * Swipe down to refresh current webpage.
+* Show custom error page in times of connectivity issues.
 * Protect WebView's state from configuration changes. (e.g. screen orientation and keyboard availability changes)
 
 ## Build
