@@ -7,10 +7,10 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
-import android.view.KeyEvent
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebSettingsCompat.FORCE_DARK_OFF
@@ -102,19 +102,19 @@ class MainActivity : AppCompatActivity() {
             binding.root.isEnabled = webView.scrollY == 0
         }
 
-        setContentView(binding.root)
-    }
-
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // Check if the key event was the Back button and if there's history
-        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
-            webView.goBack()
-            return true
+        /**
+         * If there's no web page history, close the application
+         */
+        val mCallback = onBackPressedDispatcher.addCallback(this) {
+            if (webView.canGoBack()) {
+                webView.goBack()
+            } else {
+                finish()
+            }
         }
-        // If it wasn't the Back key or there's no web page history, bubble up to the default
-        // system behavior (probably exit the activity)
-        return super.onKeyDown(keyCode, event)
+        mCallback.isEnabled = true
+
+        setContentView(binding.root)
     }
 
     private inner class MyWebViewClient : WebViewClient() {
