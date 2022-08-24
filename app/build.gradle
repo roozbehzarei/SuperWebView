@@ -47,4 +47,6 @@ dependencies {
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
     // Webkit
     implementation "androidx.webkit:webkit:1.4.0"
+    // SplashScreen
+    implementation "androidx.core:core-splashscreen:1.0.0"
 }

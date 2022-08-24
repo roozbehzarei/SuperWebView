@@ -14,7 +14,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.WebView"
+        android:theme="@style/Theme.WebView.Starting"
         tools:targetApi="33">
         <activity
             android:name=".MainActivity"
