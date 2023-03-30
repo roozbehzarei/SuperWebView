@@ -13,7 +13,7 @@
      </a>
 </p>
 
-SuperWebView is a ready-to-use WebView template to create an Android app from your own website with minimal customizations required.
+If you want to create an Android app from any website without writing a lot of code, SuperWebView is the perfect solution for you. It is a ready-made WebView template that saves you time and hassle.
 
 ### Features
 * Support Android 5.0+
