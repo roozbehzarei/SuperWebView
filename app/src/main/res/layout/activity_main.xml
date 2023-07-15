@@ -19,7 +19,7 @@
             android:id="@+id/progress_indicator"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:indeterminate="true"
+            android:indeterminate="false"
             android:visibility="invisible"
             app:indicatorColor="?attr/colorPrimary"
             app:layout_constraintStart_toStartOf="parent"

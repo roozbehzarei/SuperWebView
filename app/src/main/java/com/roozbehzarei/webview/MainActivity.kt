@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.View
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.addCallback
@@ -40,6 +41,7 @@ class MainActivity : AppCompatActivity() {
          */
         webView = binding.webView
         webView.webViewClient = MyWebViewClient()
+        webView.webChromeClient = MyWebChromeClient()
         with(webView.settings) {
             // Tell the WebView to enable JavaScript execution.
             javaScriptEnabled = true
@@ -54,9 +56,11 @@ class MainActivity : AppCompatActivity() {
                 Configuration.UI_MODE_NIGHT_YES -> {
                     WebSettingsCompat.setForceDark(webView.settings, FORCE_DARK_ON)
                 }
+
                 Configuration.UI_MODE_NIGHT_NO, Configuration.UI_MODE_NIGHT_UNDEFINED -> {
                     WebSettingsCompat.setForceDark(webView.settings, FORCE_DARK_OFF)
                 }
+
                 else -> {
                     //
                 }
@@ -169,6 +173,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    }
+
+    /**
+     * Update the progress bar when loading a webpage
+     */
+    private inner class MyWebChromeClient : WebChromeClient() {
+        override fun onProgressChanged(view: WebView?, newProgress: Int) {
+            super.onProgressChanged(view, newProgress)
+            binding.progressIndicator.progress = newProgress
+        }
     }
 
 }
