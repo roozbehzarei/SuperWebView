@@ -4,19 +4,18 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.View
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.webkit.WebSettingsCompat
-import androidx.webkit.WebSettingsCompat.FORCE_DARK_OFF
-import androidx.webkit.WebSettingsCompat.FORCE_DARK_ON
 import androidx.webkit.WebViewFeature
 import com.roozbehzarei.webview.databinding.ActivityMainBinding
 
@@ -43,26 +42,22 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = MyWebViewClient()
         webView.webChromeClient = MyWebChromeClient()
         with(webView.settings) {
-            // Tell the WebView to enable JavaScript execution.
+            // Tell the WebView to enable JavaScript execution
             javaScriptEnabled = true
-            // Enable DOM storage API.
+            // Enable DOM storage API
             domStorageEnabled = false
-            // Disable support for zooming using webView's on-screen zoom controls and gestures.
+            // Disable support for zooming using webView's on-screen zoom controls and gestures
             setSupportZoom(false)
         }
-        //
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+        // If dark theme is turned on, automatically render all web contents using a dark theme
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
             when (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
                 Configuration.UI_MODE_NIGHT_YES -> {
-                    WebSettingsCompat.setForceDark(webView.settings, FORCE_DARK_ON)
+                    WebSettingsCompat.setAlgorithmicDarkeningAllowed(webView.settings, true)
                 }
 
                 Configuration.UI_MODE_NIGHT_NO, Configuration.UI_MODE_NIGHT_UNDEFINED -> {
-                    WebSettingsCompat.setForceDark(webView.settings, FORCE_DARK_OFF)
-                }
-
-                else -> {
-                    //
+                    WebSettingsCompat.setAlgorithmicDarkeningAllowed(webView.settings, false)
                 }
             }
         }
@@ -85,18 +80,14 @@ class MainActivity : AppCompatActivity() {
          */
         val spinnerTypedValue = TypedValue()
         theme.resolveAttribute(
-            com.google.android.material.R.attr.colorPrimary,
-            spinnerTypedValue,
-            true
+            com.google.android.material.R.attr.colorPrimary, spinnerTypedValue, true
         )
         val spinnerColor = spinnerTypedValue.resourceId
         binding.root.setColorSchemeResources(spinnerColor)
 
         val backgroundTypedValue = TypedValue()
         theme.resolveAttribute(
-            com.google.android.material.R.attr.colorPrimaryContainer,
-            backgroundTypedValue,
-            true
+            com.google.android.material.R.attr.colorPrimaryContainer, backgroundTypedValue, true
         )
         val backgroundColor = backgroundTypedValue.resourceId
         binding.root.setProgressBackgroundColorSchemeResource(backgroundColor)
@@ -129,12 +120,13 @@ class MainActivity : AppCompatActivity() {
          * Let [webView] load the [WEBSITE]
          * Otherwise, launch another Activity that handles URLs
          */
-        @Deprecated("Deprecated in Java")
-        override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-            if (url?.contains(WEBSITE) == true) {
+        override fun shouldOverrideUrlLoading(
+            view: WebView?, request: WebResourceRequest?
+        ): Boolean {
+            if (request?.url.toString().contains(WEBSITE)) {
                 return false
             }
-            Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+            Intent(Intent.ACTION_VIEW, request?.url).apply {
                 startActivity(this)
             }
             return true
@@ -153,22 +145,18 @@ class MainActivity : AppCompatActivity() {
             binding.progressIndicator.visibility = View.INVISIBLE
         }
 
-        @Deprecated("Deprecated in Java")
         override fun onReceivedError(
-            view: WebView?,
-            errorCode: Int,
-            description: String?,
-            failingUrl: String?
+            view: WebView?, request: WebResourceRequest?, error: WebResourceError?
         ) {
-            super.onReceivedError(view, errorCode, description, failingUrl)
+            super.onReceivedError(view, request, error)
             binding.webView.visibility = View.GONE
             binding.errorLayout.visibility = View.VISIBLE
             binding.root.isEnabled = false
             binding.retryButton.setOnClickListener {
-                if (webView.url == null) {
-                    webView.loadUrl(WEBSITE)
+                if (view?.url.isNullOrEmpty()) {
+                    view?.loadUrl(WEBSITE)
                 } else {
-                    webView.reload()
+                    view?.reload()
                 }
             }
         }
