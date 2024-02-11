@@ -19,9 +19,7 @@ import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import com.roozbehzarei.webview.databinding.ActivityMainBinding
 
-/**
- * [WEBSITE] the URL of the website to be loaded by [webView]
- */
+// The URL of the website to be loaded
 private const val WEBSITE = ""
 
 class MainActivity : AppCompatActivity() {
@@ -42,7 +40,7 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = MyWebViewClient()
         webView.webChromeClient = MyWebChromeClient()
         with(webView.settings) {
-            // Tell the WebView to enable JavaScript execution
+            // Enable JavaScript execution
             javaScriptEnabled = true
             // Enable DOM storage API
             domStorageEnabled = false
@@ -62,11 +60,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Start loading the given website URL
         webView.loadUrl(WEBSITE)
 
-        /**
-         * Define Swipe-to-refresh behaviour
-         */
+        // Define Swipe-to-refresh behavior
         binding.root.setOnRefreshListener {
             if (webView.url == null) {
                 webView.loadUrl(WEBSITE)
@@ -75,9 +72,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /**
-         * Theme Swipe-to-refresh layout
-         */
+        // Theme Swipe-to-refresh layout
         val spinnerTypedValue = TypedValue()
         theme.resolveAttribute(
             com.google.android.material.R.attr.colorPrimary, spinnerTypedValue, true
@@ -100,7 +95,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         /**
-         * If there's no web page history, close the application
+         * When navigating back, close the app if there's no previous webpage for [webView] to go back to
          */
         val mCallback = onBackPressedDispatcher.addCallback(this) {
             if (webView.canGoBack()) {
@@ -132,6 +127,7 @@ class MainActivity : AppCompatActivity() {
             return true
         }
 
+        // Show progress indicator when a webpage is being loaded
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
             super.onPageStarted(view, url, favicon)
             binding.webView.visibility = View.VISIBLE
@@ -139,12 +135,14 @@ class MainActivity : AppCompatActivity() {
             binding.progressIndicator.visibility = View.VISIBLE
         }
 
+        // Hide progress indicator when a webpage is finished loading
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
             binding.root.isRefreshing = false
             binding.progressIndicator.visibility = View.INVISIBLE
         }
 
+        // Show error screen if loading a webpage has failed
         override fun onReceivedError(
             view: WebView?, request: WebResourceRequest?, error: WebResourceError?
         ) {
@@ -163,10 +161,9 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    /**
-     * Update the progress bar when loading a webpage
-     */
     private inner class MyWebChromeClient : WebChromeClient() {
+
+        // Update the progress of progress indicator when loading a webpage
         override fun onProgressChanged(view: WebView?, newProgress: Int) {
             super.onProgressChanged(view, newProgress)
             binding.progressIndicator.progress = newProgress
