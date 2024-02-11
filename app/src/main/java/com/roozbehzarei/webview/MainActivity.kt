@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity() {
             // Enable JavaScript execution
             javaScriptEnabled = true
             // Enable DOM storage API
-            domStorageEnabled = false
+            domStorageEnabled = true
             // Disable support for zooming using webView's on-screen zoom controls and gestures
             setSupportZoom(false)
         }
