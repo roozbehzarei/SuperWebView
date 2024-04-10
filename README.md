@@ -13,14 +13,16 @@
      </a>
 </p>
 
-If you want to create an Android app from any website without writing a lot of code, SuperWebView is the perfect solution for you. It is a ready-made WebView template that saves you time and hassle.
+If you want to create an Android app from any website without writing code, SuperWebView is the perfect solution for you. It is a ready-made WebView template that saves you time and hassle.
+
+**NOTE:** In case you prefer the old View-based design over Jetpack Compose, refer to the [legacy version](https://github.com/roozbehzarei/SuperWebView/releases/tag/legacy).
 
 ### Features
-* Support Android 5.0+
-* Progress bar to indicate a webpage is being loaded.
-* Swipe down to refresh current webpage.
-* Show custom error page in times of connectivity issues.
-* Protect WebView's state from configuration changes. (e.g. screen orientation and keyboard availability changes)
+* Support Android 6.0+
+* Based on Material You design
+* Progress bar to indicate a webpage is being loaded
+* Swipe down to refresh current webpage
+* Protect WebView's state from configuration changes
 
 ## Build
 1. Click the **Code** button, which brings up a dialog.
@@ -36,6 +38,4 @@ If you want to create an Android app from any website without writing a lot of c
 
 ## Customize
 1. In `MainActivity.kt`, put your own website URL as the value of `WEBSITE` constant.
-2. Replace default app icons with your own.
-
-*Optional*: Change the value of `javaScriptEnabled` to `false` in `MainActivity.kt` if your website doesn't contain any JavaScript elements.
+2. Replace default app icons and name with your own.
