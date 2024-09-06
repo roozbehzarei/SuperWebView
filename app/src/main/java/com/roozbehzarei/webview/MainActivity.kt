@@ -12,10 +12,12 @@ import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
@@ -39,18 +41,22 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.roozbehzarei.webview.ui.theme.SuperWebViewTheme
 
 // The URL of the website to be loaded in the app
-private const val WEBSITE = "https://roozbehzarei.me"
+private const val WEBSITE = "https://roozbehzarei.me/"
 
 class MainActivity : ComponentActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
             SuperWebViewTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .safeDrawingPadding(),
+                    color = MaterialTheme.colorScheme.background
                 ) {
                     MainScreen()
                 }
