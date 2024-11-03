@@ -15,14 +15,16 @@
 
 If you want to create an Android app from any website without writing code, SuperWebView is the perfect solution for you. It is a ready-made WebView template that saves you time and hassle.
 
-**NOTE:** In case you prefer the old View-based design over Jetpack Compose, refer to the [legacy version](https://github.com/roozbehzarei/SuperWebView/releases/tag/legacy).
+> [!NOTE]
+> For targeting both Android and iOS platforms, use the cross-platform solution [FlutterWebApp](https://github.com/ebadimobina/FlutterWebApp).
 
 ### Features
-* Support Android 6.0+
-* Based on Material You design
-* Progress bar to indicate a webpage is being loaded
-* Swipe down to refresh current webpage
-* Protect WebView's state from configuration changes
+* **Broad Compatibility:** Runs smoothly on Android 6.0+ devices
+* **Optimized for Speed:** Lightweight design delivering high native performance
+* **Real-time Loading Feedback:** Includes a progress bar to keep users informed while webpages load
+* **Easy Refresh:** Swipe-down gesture for quick page refresh
+* **Modern Interface:** Based on Material You design for a polished, contemporary look
+* **Enhanced Stability:** Protects WebView's state across configuration changes, ensuring a smooth, uninterrupted experience
 
 ## Build
 1. Click the **Code** button, which brings up a dialog.
