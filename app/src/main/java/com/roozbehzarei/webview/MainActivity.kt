@@ -36,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat.startActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.roozbehzarei.webview.ui.theme.SuperWebViewTheme
 
@@ -127,11 +126,11 @@ private fun WebViewer(
                 override fun shouldOverrideUrlLoading(
                     view: WebView?, request: WebResourceRequest?
                 ): Boolean {
-                    if (request?.url.toString().contains(WEBSITE)) {
+                    if (request?.url.toString().startsWith(WEBSITE)) {
                         return false
                     }
                     Intent(Intent.ACTION_VIEW, request?.url).apply {
-                        startActivity(context, this, null)
+                        context.startActivity(this, null)
                     }
                     return true
                 }
