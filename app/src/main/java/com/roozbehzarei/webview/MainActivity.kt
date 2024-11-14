@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -12,7 +13,6 @@ import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,7 +47,6 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
             SuperWebViewTheme {
@@ -73,15 +72,22 @@ private fun MainScreen() {
     val pullRefreshState = rememberPullRefreshState(isRefreshing, {
         isRefreshing = true
     })
+    var fullScreenView: View? by rememberSaveable { mutableStateOf(null) }
 
     Box(
         Modifier
             .pullRefresh(pullRefreshState)
+            .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        WebViewer(isRefreshing = isRefreshing,
+        WebViewer(
+            isRefreshing = isRefreshing,
             setRefreshed = { isRefreshing = false },
-            updateProgress = { currentProgress -> progress = currentProgress })
+            updateProgress = { currentProgress -> progress = currentProgress },
+            onViewReceived = {
+                fullScreenView = it
+            },
+        )
         ProgressIndicator(progress)
         PullRefreshIndicator(
             isRefreshing,
@@ -91,6 +97,11 @@ private fun MainScreen() {
             backgroundColor = MaterialTheme.colorScheme.background
         )
     }
+
+    AnimatedVisibility(fullScreenView != null) {
+        AndroidView(modifier = Modifier.fillMaxSize(), factory = { context -> fullScreenView!! })
+    }
+
 }
 
 @Composable
@@ -108,7 +119,8 @@ private fun WebViewer(
     modifier: Modifier = Modifier,
     isRefreshing: Boolean,
     setRefreshed: () -> Unit,
-    updateProgress: (Int) -> Unit
+    updateProgress: (Int) -> Unit,
+    onViewReceived: (View?) -> Unit
 ) {
     var webView: WebView? = null
     var isBackEnabled by rememberSaveable { mutableStateOf(false) }
@@ -117,7 +129,6 @@ private fun WebViewer(
     BackHandler(enabled = isBackEnabled) {
         webView?.goBack()
     }
-
     AndroidView(modifier = modifier.fillMaxSize(), factory = { context ->
         WebView(context).apply {
             webViewClient = object : WebViewClient() {
@@ -150,6 +161,16 @@ private fun WebViewer(
                     updateProgress(newProgress)
                 }
 
+                override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
+                    onViewReceived(view)
+                    super.onShowCustomView(view, callback)
+                }
+
+                override fun onHideCustomView() {
+                    onViewReceived(null)
+                    super.onHideCustomView()
+                }
+
             }
             // Configure WebView client
             with(this.settings) {
@@ -170,4 +191,5 @@ private fun WebViewer(
         }
         webView = it
     })
+
 }
