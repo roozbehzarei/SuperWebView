@@ -1,4 +1,4 @@
-package com.roozbehzarei.webview
+package com.roozbehzarei.superwebview
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -37,10 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.roozbehzarei.webview.ui.theme.SuperWebViewTheme
+import com.roozbehzarei.superwebview.ui.theme.SuperWebViewTheme
 
 // The URL of the website to be loaded in the app
-private const val WEBSITE = "https://roozbehzarei.me/"
+private const val WEBSITE = "https://app.snapp.taxi/"
 
 class MainActivity : ComponentActivity() {
 

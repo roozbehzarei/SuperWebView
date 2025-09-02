@@ -1,4 +1,4 @@
-package com.roozbehzarei.webview.ui.theme
+package com.roozbehzarei.superwebview.ui.theme
 
 import androidx.compose.material3.Typography
 
