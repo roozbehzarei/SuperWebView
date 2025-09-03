@@ -15,16 +15,17 @@
 
 If you want to create an Android app from any website without writing code, SuperWebView is the perfect solution for you. It is a ready-made WebView template that saves you time and hassle.
 
+### Variants
+|  | [Compose](https://github.com/roozbehzarei/SuperWebView/releases/tag/compose) | [Legacy (XML)](https://github.com/roozbehzarei/SuperWebView/releases/tag/legacy) |
+| --- | --- | --- |
+| Compatibility | Android 6.0 - 16 | Android 5.0 - 14 |
+| Progress indicator | ✅ | ✅ |
+| Pull-to-refresh | ✅ | ✅ |
+| Custom error screen | ❌ | ✅ |
+| Source code obfuscation | ✅ | ❌ |
+
 > [!NOTE]
 > For targeting both Android and iOS platforms, use the cross-platform solution [FlutterWebApp](https://github.com/ebadimobina/FlutterWebApp).
-
-### Features
-* **Broad Compatibility:** Runs smoothly on Android 6.0+ devices
-* **Optimized for Speed:** Lightweight design delivering high native performance
-* **Real-time Loading Feedback:** Includes a progress bar to keep users informed while webpages load
-* **Easy Refresh:** Swipe-down gesture for quick page refresh
-* **Modern Interface:** Based on Material You design for a polished, contemporary look
-* **Enhanced Stability:** Protects WebView's state across configuration changes, ensuring a smooth, uninterrupted experience
 
 ## Build
 1. Click the **Code** button, which brings up a dialog.
@@ -39,5 +40,6 @@ If you want to create an Android app from any website without writing code, Supe
 10. Click the **Make Project** button to build the app.
 
 ## Customize
-1. In `MainActivity.kt`, put your own website URL as the value of `WEBSITE` constant.
+1. In *MainActivity.kt*, put your own website URL as the value of `WEBSITE` constant.
 2. Replace default app icons and name with your own.
+3. Change the unique identifier of your app, `applicationId`, in *app > build.gradle.kts*.
