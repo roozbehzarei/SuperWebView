@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -18,12 +19,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,14 +29,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.roozbehzarei.superwebview.ui.theme.SuperWebViewTheme
 
-// The URL of the website to be loaded in the app
-private const val WEBSITE = "https://app.snapp.taxi/"
+private const val WEBSITE = "https://roozbehzarei.com"
 
 class MainActivity : ComponentActivity() {
 
@@ -68,34 +64,19 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MainScreen() {
     var progress by rememberSaveable { mutableIntStateOf(0) }
-    var isRefreshing by rememberSaveable { mutableStateOf(false) }
-    val pullRefreshState = rememberPullRefreshState(isRefreshing, {
-        isRefreshing = true
-    })
     var fullScreenView: View? by rememberSaveable { mutableStateOf(null) }
 
     Box(
-        Modifier
-            .pullRefresh(pullRefreshState)
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+        Modifier.fillMaxSize()
     ) {
-        WebViewer(
-            isRefreshing = isRefreshing,
-            setRefreshed = { isRefreshing = false },
+        WebViewWithRefresher(
+            modifier = Modifier.fillMaxSize(),
             updateProgress = { currentProgress -> progress = currentProgress },
             onViewReceived = {
                 fullScreenView = it
             },
         )
         ProgressIndicator(progress)
-        PullRefreshIndicator(
-            isRefreshing,
-            pullRefreshState,
-            Modifier.align(Alignment.TopCenter),
-            contentColor = MaterialTheme.colorScheme.primary,
-            backgroundColor = MaterialTheme.colorScheme.background
-        )
     }
 
     AnimatedVisibility(fullScreenView != null) {
@@ -115,22 +96,33 @@ private fun ProgressIndicator(progress: Int) {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun WebViewer(
-    modifier: Modifier = Modifier,
-    isRefreshing: Boolean,
-    setRefreshed: () -> Unit,
-    updateProgress: (Int) -> Unit,
-    onViewReceived: (View?) -> Unit
+private fun WebViewWithRefresher(
+    modifier: Modifier = Modifier, updateProgress: (Int) -> Unit, onViewReceived: (View?) -> Unit
 ) {
     var webView: WebView? = null
+    val webViewId = View.generateViewId()
     var isBackEnabled by rememberSaveable { mutableStateOf(false) }
+    val primaryColorArgb = MaterialTheme.colorScheme.primary.toArgb()
+    val secondaryColorArgb = MaterialTheme.colorScheme.secondary.toArgb()
+    val tertiaryColorArgb = MaterialTheme.colorScheme.tertiary.toArgb()
 
     // Override back navigation to load WebView's previous webpage
     BackHandler(enabled = isBackEnabled) {
         webView?.goBack()
     }
     AndroidView(modifier = modifier.fillMaxSize(), factory = { context ->
-        WebView(context).apply {
+
+        val swipeRefreshLayout = SwipeRefreshLayout(context).apply {
+            setColorSchemeColors(
+                primaryColorArgb, secondaryColorArgb, tertiaryColorArgb
+            )
+            setOnRefreshListener {
+                webView?.reload()
+            }
+        }
+
+        webView = WebView(context).apply {
+            id = webViewId
             webViewClient = object : WebViewClient() {
 
                 // Open external links in web browser
@@ -152,6 +144,13 @@ private fun WebViewer(
                     isBackEnabled = view?.canGoBack() == true
                 }
 
+                override fun onReceivedError(
+                    view: WebView?, request: WebResourceRequest?, error: WebResourceError?
+                ) {
+                    super.onReceivedError(view, request, error)
+                    swipeRefreshLayout.isRefreshing = false
+                }
+
             }
             webChromeClient = object : WebChromeClient() {
 
@@ -159,6 +158,7 @@ private fun WebViewer(
                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
                     super.onProgressChanged(view, newProgress)
                     updateProgress(newProgress)
+                    if (newProgress == 100) swipeRefreshLayout.isRefreshing = false
                 }
 
                 override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
@@ -173,7 +173,7 @@ private fun WebViewer(
 
             }
             // Configure WebView client
-            with(this.settings) {
+            with(settings) {
                 domStorageEnabled = true
                 javaScriptEnabled = true
                 setSupportZoom(false)
@@ -181,15 +181,13 @@ private fun WebViewer(
                     isAlgorithmicDarkeningAllowed = true
                 }
             }
-            this.loadUrl(WEBSITE)
-            webView = this
+            loadUrl(WEBSITE)
         }
-    }, update = {
-        if (isRefreshing) {
-            it.reload()
-            setRefreshed()
-        }
-        webView = it
+        swipeRefreshLayout.addView(webView)
+        swipeRefreshLayout
+    }, update = { swipeRefreshLayout ->
+        val view = swipeRefreshLayout.findViewById<WebView>(webViewId)
+        webView = view
     })
 
 }

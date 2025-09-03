@@ -47,7 +47,7 @@ android {
 
 dependencies {
     // Compose Bill of Materials
-    val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
+    val composeBom = platform("androidx.compose:compose-bom:2025.08.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
     // Compose dependencies
@@ -65,4 +65,6 @@ dependencies {
     implementation(libs.androidx.webkit)
     // SplashScreen
     implementation(libs.androidx.core.splashscreen)
+    // Swiperefreshlayout
+    implementation(libs.androidx.swiperefreshlayout)
 }
