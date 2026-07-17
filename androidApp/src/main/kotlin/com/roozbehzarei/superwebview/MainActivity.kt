@@ -35,9 +35,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.roozbehzarei.superwebview.shared.WebAppConfig
 import com.roozbehzarei.superwebview.ui.theme.SuperWebViewTheme
-
-private const val WEBSITE = "https://roozbehzarei.com"
 
 /**
  * Main activity of the application.
@@ -108,7 +107,7 @@ private fun MainScreen() {
 @Composable
 private fun ProgressIndicator(progress: Int) {
     AnimatedVisibility(
-        modifier = Modifier.fillMaxWidth(), visible = progress in 1..99
+        modifier = Modifier.fillMaxWidth(), visible = WebAppConfig.isProgressVisible(progress)
     ) {
         LinearProgressIndicator(progress = { progress.toFloat() / 100 })
     }
@@ -161,10 +160,13 @@ private fun WebViewWithRefresher(
                 override fun shouldOverrideUrlLoading(
                     view: WebView?, request: WebResourceRequest?
                 ): Boolean {
-                    if (request?.url.toString().startsWith(WEBSITE)) {
-                        return false // Load in WebView
-                    }
-                    // Open external links in a browser
+
+                    // Load in WebView
+                    if (WebAppConfig.shouldLaunchInBrowser(request?.url.toString())
+                            .not()
+                    ) return false
+
+                    // Open external links in web browser
                     try {
                         Intent(Intent.ACTION_VIEW, request?.url).apply {
                             context.startActivity(this, null)
@@ -172,7 +174,9 @@ private fun WebViewWithRefresher(
                     } catch (e: Exception) {
                         if (BuildConfig.DEBUG) e.printStackTrace()
                     }
-                    return true // Indicate that the URL loading is handled
+
+                    // Indicate that the URL loading is handled
+                    return true
                 }
 
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -220,7 +224,7 @@ private fun WebViewWithRefresher(
                         true // Enable algorithmic dark mode on Android Tiramisu+
                 }
             }
-            loadUrl(WEBSITE) // Load the initial website
+            loadUrl(WebAppConfig.PROTOCOL + WebAppConfig.DOMAIN) // Load the initial website
         }
         swipeRefreshLayout.addView(webView) // Add WebView to SwipeRefreshLayout
         swipeRefreshLayout // Return SwipeRefreshLayout as the view for AndroidView

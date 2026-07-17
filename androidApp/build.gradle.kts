@@ -50,4 +50,5 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.webkit)
     implementation(libs.androidx.activity.compose)
+    implementation(project(":shared"))
 }
