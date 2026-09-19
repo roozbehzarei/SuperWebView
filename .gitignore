@@ -13,7 +13,10 @@ captures/
 .externalNativeBuild/
 .cxx/
 *.apk
-output.json
+output-metadata.json
+
+# Kotlin generated files and folders
+.kotlin/
 
 # IntelliJ
 *.iml

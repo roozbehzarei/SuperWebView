@@ -30,20 +30,16 @@ If you already have a website for your business, you don't need to invest in bui
 
 ### Build
 
-1. Click the Code button, which brings up a dialog.
-2. In the dialog, click the Download ZIP button to save the project to your computer. Wait for the download to complete.
-3. Locate the file on your computer (likely in the Downloads folder).
-4. Double-click the ZIP file to unpack it. This creates a new folder that contains the project files.
-5. Start Android Studio.
-6. In the Welcome to Android Studio window, click Open an existing Android Studio project.
-7. In the Import Project dialog, navigate to where the unzipped project folder is located.
-8. Double-click on that project folder.
-9. Wait for Android Studio to open the project.
-10. In *app/src/main/kotlin/com/roozbehzarei/superwebview/MainActivity.kt* file, put your desired website URL as the value of `WEBSITE` constant.
-11. In *app/build.gradle.kts* file, replace the unique identifier `applicationId` with your own.
-12. In *app/src/main/res/values/strings.xml*, update `app_name` string resource to your desired app name.
-13. Use *Asset Studio* to override app icons with your own.
-14. Click the Make Project button to build the app.
+1. Start [Android Studio](https://developer.android.com/studio) (Quail 2 or newer). Make sure it has [Kotlin Multiplatform](https://plugins.jetbrains.com/plugin/14936-kotlin-multiplatform) plugin installed.
+2. In the Welcome to Android Studio window, click Clone Repository.
+3. In the Clone Repository dialog, paste `https://github.com/roozbehzarei/SuperWebView.git` into the URL text field and click on Clone.
+4. Wait for Android Studio to open the project, click on Trust Project if prompted.
+5. Using project tool window, open *shared > src > commonMain > ... > WebAppConfig.kt* file and put your desired website domain address as the value of `WEBSITE` constant.
+6. In *androidApp > build.gradle.kts* file, replace the existing `applicationId` value with your own unique application ID.
+7. In *androidApp > src > main > res > values > strings.xml*, update `app_name` string resource to your desired app name.
+8. Use *Asset Studio* to override app icons with your own.
+9. Using the hamburger menu, click on *Build > Generate Signed App Bundle or APK...*.
+10. Follow the *Generate Signed App Bundle or APK* wizard instructions to sign and generate your app APK or bundle.   
 
 > [!IMPORTANT]
 > Ensure your website is "mobile-friendly" before packaging it. Since the app displays your live website, a responsive design ensures the best user experience.

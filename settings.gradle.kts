@@ -16,4 +16,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "SuperWebView"
-include(":app")
+include(":androidApp")
+include(":shared")
