@@ -1,7 +1,9 @@
 package com.roozbehzarei.superwebview
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
@@ -11,9 +13,12 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,9 +37,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.roozbehzarei.superwebview.data.download.DownloadHandler
+import com.roozbehzarei.superwebview.data.model.Downloadable
 import com.roozbehzarei.superwebview.shared.WebAppConfig
 import com.roozbehzarei.superwebview.ui.theme.SuperWebViewTheme
 
@@ -127,7 +136,25 @@ private fun WebViewWithRefresher(
     modifier: Modifier = Modifier, updateProgress: (Int) -> Unit, onViewReceived: (View?) -> Unit
 ) {
     var webView: WebView? = null
-    val webViewId = View.generateViewId() // Unique ID for the WebView within SwipeRefreshLayout
+    val webViewId = remember { View.generateViewId() }
+    val context = LocalContext.current
+    var pendingDownload by remember { mutableStateOf<Downloadable?>(null) }
+    val storagePermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val download = pendingDownload
+        pendingDownload = null
+        if (download != null) {
+            if (granted) {
+                try {
+                    DownloadHandler.enqueue(context, download)
+                    Toast.makeText(context, R.string.toast_download_started, Toast.LENGTH_LONG).show()
+                } catch (_: Exception) {}
+            } else {
+                Toast.makeText(context, R.string.toast_storage_permission_denied, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     var isBackEnabled by rememberSaveable { mutableStateOf(false) }
     val primaryColorArgb = MaterialTheme.colorScheme.primary.toArgb()
     val secondaryColorArgb = MaterialTheme.colorScheme.secondary.toArgb()
@@ -151,6 +178,26 @@ private fun WebViewWithRefresher(
         // Create and configure WebView
         webView = WebView(context).apply {
             id = webViewId
+            setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+                updateProgress(100)
+                swipeRefreshLayout.isRefreshing = false
+                val download = DownloadHandler.prepare(url, userAgent, contentDisposition, mimeType)
+                    ?: return@setDownloadListener
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                    PackageManager.PERMISSION_GRANTED
+                ) {
+                    if (pendingDownload == null) {
+                        pendingDownload = download
+                        storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    }
+                } else {
+                    try {
+                        DownloadHandler.enqueue(context, download)
+                        Toast.makeText(context, R.string.toast_download_started, Toast.LENGTH_LONG).show()
+                    } catch (_: Exception) {}
+                }
+            }
             webViewClient = object : WebViewClient() {
 
                 /**

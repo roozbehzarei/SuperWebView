@@ -3,4 +3,6 @@
     <string name="error_title">Oops!</string>
     <string name="button_retry">TRY AGAIN</string>
     <string name="error_message">Something went wrong.</string>
+    <string name="toast_download_started">Downloading file…</string>
+    <string name="toast_storage_permission_denied">Storage permission is needed to download files</string>
 </resources>
