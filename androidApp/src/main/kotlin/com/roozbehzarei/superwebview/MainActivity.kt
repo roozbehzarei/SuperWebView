@@ -2,12 +2,19 @@ package com.roozbehzarei.superwebview
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.ContentResolver
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Process
 import android.view.View
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -29,10 +36,12 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -46,6 +55,10 @@ import com.roozbehzarei.superwebview.data.download.DownloadHandler
 import com.roozbehzarei.superwebview.data.model.Downloadable
 import com.roozbehzarei.superwebview.shared.WebAppConfig
 import com.roozbehzarei.superwebview.ui.theme.SuperWebViewTheme
+import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Main activity of the application.
@@ -135,7 +148,7 @@ private fun ProgressIndicator(progress: Int) {
 private fun WebViewWithRefresher(
     modifier: Modifier = Modifier, updateProgress: (Int) -> Unit, onViewReceived: (View?) -> Unit
 ) {
-    var webView: WebView? = null
+    var webView: WebView? by remember { mutableStateOf(null) }
     val webViewId = remember { View.generateViewId() }
     val context = LocalContext.current
     var pendingDownload by remember { mutableStateOf<Downloadable?>(null) }
@@ -159,6 +172,57 @@ private fun WebViewWithRefresher(
     val primaryColorArgb = MaterialTheme.colorScheme.primary.toArgb()
     val secondaryColorArgb = MaterialTheme.colorScheme.secondary.toArgb()
     val tertiaryColorArgb = MaterialTheme.colorScheme.tertiary.toArgb()
+    val scope = rememberCoroutineScope()
+    var fileCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
+    val storagePermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val download = pendingDownload
+        pendingDownload = null
+        if (download != null) {
+            if (granted) {
+                try {
+                    DownloadHandler.enqueue(context, download)
+                    Toast.makeText(context, R.string.toast_download_started, Toast.LENGTH_LONG).show()
+                } catch (_: Exception) {}
+            } else {
+                Toast.makeText(context, R.string.toast_storage_permission_denied, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+    val fileChooser = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val callback = fileCallback ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val selected = if (result.resultCode == Activity.RESULT_OK) {
+                // Some WebView providers only parse Intent.data, not multi-file ClipData.
+                result.data?.clipData?.let { clip ->
+                    Array(clip.itemCount) { clip.getItemAt(it).uri ?: Uri.EMPTY }
+                } ?: WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+            } else null
+            val readable = withContext(Dispatchers.IO) {
+                selected?.takeIf { uris ->
+                    uris.isNotEmpty() && uris.all { isReadableUploadUri(context, it) }
+                }
+            }
+            if (fileCallback === callback) {
+                fileCallback = null
+                if (result.resultCode == Activity.RESULT_OK && readable == null) {
+                    Toast.makeText(context, R.string.file_selection_unreadable, Toast.LENGTH_SHORT).show()
+                }
+                callback.onReceiveValue(readable)
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            val callback = fileCallback
+            fileCallback = null
+            callback?.onReceiveValue(null)
+        }
+    }
 
     // Override back navigation to allow WebView to go back in its history
     BackHandler(enabled = isBackEnabled) {
@@ -241,6 +305,47 @@ private fun WebViewWithRefresher(
             }
             webChromeClient = object : WebChromeClient() {
 
+                override fun onShowFileChooser(
+                    webView: WebView,
+                    filePathCallback: ValueCallback<Array<Uri>>,
+                    fileChooserParams: FileChooserParams
+                ): Boolean {
+                    if (fileChooserParams.mode != FileChooserParams.MODE_OPEN &&
+                        fileChooserParams.mode != FileChooserParams.MODE_OPEN_MULTIPLE
+                    ) return false
+                    if (fileCallback != null) {
+                        filePathCallback.onReceiveValue(null)
+                        return true
+                    }
+                    fileCallback = filePathCallback
+                    val mimeTypes = fileChooserParams.acceptTypes
+                        .flatMap { it.split(',') }
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .distinct()
+                        .toTypedArray()
+                    try {
+                        fileChooser.launch(fileChooserParams.createIntent().apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = mimeTypes.singleOrNull() ?: "*/*"
+                            if (mimeTypes.size > 1) putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
+                            putExtra(
+                                Intent.EXTRA_ALLOW_MULTIPLE,
+                                fileChooserParams.mode == FileChooserParams.MODE_OPEN_MULTIPLE
+                            )
+                        })
+                    } catch (_: ActivityNotFoundException) {
+                        fileCallback = null
+                        filePathCallback.onReceiveValue(null)
+                        Toast.makeText(context, R.string.file_picker_unavailable, Toast.LENGTH_SHORT).show()
+                    } catch (_: SecurityException) {
+                        fileCallback = null
+                        filePathCallback.onReceiveValue(null)
+                        Toast.makeText(context, R.string.file_picker_unavailable, Toast.LENGTH_SHORT).show()
+                    }
+                    return true
+                }
+
                 /**
                  * Reports the loading progress of the current page.
                  */
@@ -282,4 +387,22 @@ private fun WebViewWithRefresher(
         webView = view
     })
 
+}
+
+private fun isReadableUploadUri(context: Context, uri: Uri): Boolean {
+    if (uri.scheme != ContentResolver.SCHEME_CONTENT ||
+        context.checkUriPermission(
+            uri, Process.myPid(), Process.myUid(), Intent.FLAG_GRANT_READ_URI_PERMISSION
+        ) != PackageManager.PERMISSION_GRANTED ||
+        context.packageManager.resolveContentProvider(uri.authority.orEmpty().substringAfterLast('@'), 0)
+            ?.applicationInfo?.uid == context.applicationInfo.uid
+    ) return false
+
+    return try {
+        context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { true } == true
+    } catch (_: IOException) {
+        false
+    } catch (_: SecurityException) {
+        false
+    }
 }

@@ -5,4 +5,6 @@
     <string name="error_message">Something went wrong.</string>
     <string name="toast_download_started">Downloading file…</string>
     <string name="toast_storage_permission_denied">Storage permission is needed to download files</string>
+    <string name="file_picker_unavailable">No file picker is available.</string>
+    <string name="file_selection_unreadable">Unable to access the selected files. Please choose them again.</string>
 </resources>
