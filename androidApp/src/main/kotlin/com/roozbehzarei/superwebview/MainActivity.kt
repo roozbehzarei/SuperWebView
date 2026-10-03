@@ -174,22 +174,6 @@ private fun WebViewWithRefresher(
     val tertiaryColorArgb = MaterialTheme.colorScheme.tertiary.toArgb()
     val scope = rememberCoroutineScope()
     var fileCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
-    val storagePermission = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        val download = pendingDownload
-        pendingDownload = null
-        if (download != null) {
-            if (granted) {
-                try {
-                    DownloadHandler.enqueue(context, download)
-                    Toast.makeText(context, R.string.toast_download_started, Toast.LENGTH_LONG).show()
-                } catch (_: Exception) {}
-            } else {
-                Toast.makeText(context, R.string.toast_storage_permission_denied, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
     val fileChooser = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
