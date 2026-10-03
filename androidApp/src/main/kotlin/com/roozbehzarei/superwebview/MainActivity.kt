@@ -302,17 +302,9 @@ private fun WebViewWithRefresher(
                         return true
                     }
                     fileCallback = filePathCallback
-                    val mimeTypes = fileChooserParams.acceptTypes
-                        .flatMap { it.split(',') }
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }
-                        .distinct()
-                        .toTypedArray()
                     try {
                         fileChooser.launch(fileChooserParams.createIntent().apply {
                             addCategory(Intent.CATEGORY_OPENABLE)
-                            type = mimeTypes.singleOrNull() ?: "*/*"
-                            if (mimeTypes.size > 1) putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
                             putExtra(
                                 Intent.EXTRA_ALLOW_MULTIPLE,
                                 fileChooserParams.mode == FileChooserParams.MODE_OPEN_MULTIPLE
