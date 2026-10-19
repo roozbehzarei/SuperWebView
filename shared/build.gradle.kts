@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
-    alias(libs.plugins.android.lint)
 }
 
 kotlin {
@@ -15,15 +14,6 @@ kotlin {
             version = release(37)
         }
         minSdk = 24
-
-        withHostTestBuilder {
-        }
-
-        withDeviceTestBuilder {
-            sourceSetTreeName = "test"
-        }.configure {
-            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        }
     }
 
     // For iOS targets, this is also where you should
@@ -61,15 +51,8 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(libs.kotlin.stdlib)
                 implementation(libs.ktor.http)
                 // Add KMP dependencies here
-            }
-        }
-
-        commonTest {
-            dependencies {
-                implementation(libs.kotlin.test)
             }
         }
 
@@ -78,14 +61,6 @@ kotlin {
                 // Add Android-specific dependencies here. Note that this source set depends on
                 // commonMain by default and will correctly pull the Android artifacts of any KMP
                 // dependencies declared in commonMain.
-            }
-        }
-
-        getByName("androidDeviceTest") {
-            dependencies {
-                implementation(libs.androidx.core)
-                implementation(libs.androidx.junit)
-                implementation(libs.androidx.runner)
             }
         }
 
