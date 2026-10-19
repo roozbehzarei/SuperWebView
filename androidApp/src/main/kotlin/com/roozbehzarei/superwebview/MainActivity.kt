@@ -8,7 +8,6 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -31,7 +30,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -50,15 +48,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.roozbehzarei.superwebview.data.download.DownloadHandler
 import com.roozbehzarei.superwebview.data.model.Downloadable
 import com.roozbehzarei.superwebview.shared.WebAppConfig
 import com.roozbehzarei.superwebview.ui.theme.SuperWebViewTheme
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 /**
  * Main activity of the application.
@@ -94,7 +93,6 @@ class MainActivity : ComponentActivity() {
  * Composable function that defines the main screen layout.
  * Includes a WebView, a progress indicator, and handles full-screen video playback.
  */
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun MainScreen() {
     var progress by rememberSaveable { mutableIntStateOf(0) }
@@ -196,6 +194,15 @@ private fun WebViewWithRefresher(
                     Toast.makeText(context, R.string.file_selection_unreadable, Toast.LENGTH_SHORT).show()
                 }
                 callback.onReceiveValue(readable)
+            }
+        }
+    }
+
+    webView?.let { view ->
+        LifecycleResumeEffect(view) {
+            view.onResume()
+            onPauseOrDispose {
+                if (webView === view) view.onPause()
             }
         }
     }
@@ -365,7 +372,13 @@ private fun WebViewWithRefresher(
         // This is necessary because the factory lambda might not be re-executed
         val view = swipeRefreshLayout.findViewById<WebView>(webViewId)
         webView = view
-    })
+    },
+        onRelease = { swipeRefreshLayout ->
+            swipeRefreshLayout.setOnRefreshListener(null)
+            swipeRefreshLayout.removeView(webView)
+            webView?.destroy()
+            webView = null
+        })
 
 }
 
