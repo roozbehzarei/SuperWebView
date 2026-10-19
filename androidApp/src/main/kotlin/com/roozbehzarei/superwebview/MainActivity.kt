@@ -248,6 +248,15 @@ private fun WebViewWithRefresher(
             }
             webViewClient = object : WebViewClient() {
 
+                override fun doUpdateVisitedHistory(
+                    view: WebView?,
+                    url: String?,
+                    isReload: Boolean
+                ) {
+                    super.doUpdateVisitedHistory(view, url, isReload)
+                    isBackEnabled = view?.canGoBack() == true
+                }
+
                 /**
                  * Handles URL loading. Opens external links in a web browser,
                  * internal links (starting with WEBSITE) are loaded in the WebView.
@@ -272,11 +281,6 @@ private fun WebViewWithRefresher(
 
                     // Indicate that the URL loading is handled
                     return true
-                }
-
-                override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                    super.onPageStarted(view, url, favicon)
-                    isBackEnabled = view?.canGoBack() == true
                 }
 
                 override fun onReceivedError(
