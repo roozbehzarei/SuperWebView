@@ -50,6 +50,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import com.roozbehzarei.superwebview.data.download.DownloadHandler
 import com.roozbehzarei.superwebview.data.model.Downloadable
 import com.roozbehzarei.superwebview.shared.WebAppConfig
@@ -358,6 +360,9 @@ private fun WebViewWithRefresher(
                 domStorageEnabled = true
                 javaScriptEnabled = true
                 setSupportZoom(false)
+                if (WebViewFeature.isFeatureSupported(WebViewFeature.DOWNLOAD_FAVICONS_ENABLED)) {
+                    WebSettingsCompat.setDownloadFaviconsEnabled(this, false)
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     isAlgorithmicDarkeningAllowed =
                         true // Enable algorithmic dark mode on Android Tiramisu+
