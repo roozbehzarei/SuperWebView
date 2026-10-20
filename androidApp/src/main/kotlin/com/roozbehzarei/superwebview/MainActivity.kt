@@ -1,42 +1,65 @@
 package com.roozbehzarei.superwebview
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.ContentResolver
+import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Process
 import android.view.View
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
+import com.roozbehzarei.superwebview.data.download.DownloadHandler
+import com.roozbehzarei.superwebview.data.model.Downloadable
 import com.roozbehzarei.superwebview.shared.WebAppConfig
 import com.roozbehzarei.superwebview.ui.theme.SuperWebViewTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.IOException
 
 /**
  * Main activity of the application.
@@ -72,7 +95,6 @@ class MainActivity : ComponentActivity() {
  * Composable function that defines the main screen layout.
  * Includes a WebView, a progress indicator, and handles full-screen video playback.
  */
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun MainScreen() {
     var progress by rememberSaveable { mutableIntStateOf(0) }
@@ -126,12 +148,74 @@ private fun ProgressIndicator(progress: Int) {
 private fun WebViewWithRefresher(
     modifier: Modifier = Modifier, updateProgress: (Int) -> Unit, onViewReceived: (View?) -> Unit
 ) {
-    var webView: WebView? = null
-    val webViewId = View.generateViewId() // Unique ID for the WebView within SwipeRefreshLayout
+    var webView: WebView? by remember { mutableStateOf(null) }
+    val webViewId = remember { View.generateViewId() }
+    val context = LocalContext.current
+    var pendingDownload by remember { mutableStateOf<Downloadable?>(null) }
+    val storagePermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val download = pendingDownload
+        pendingDownload = null
+        if (download != null) {
+            if (granted) {
+                try {
+                    DownloadHandler.enqueue(context, download)
+                    Toast.makeText(context, R.string.toast_download_started, Toast.LENGTH_LONG).show()
+                } catch (_: Exception) {}
+            } else {
+                Toast.makeText(context, R.string.toast_storage_permission_denied, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     var isBackEnabled by rememberSaveable { mutableStateOf(false) }
     val primaryColorArgb = MaterialTheme.colorScheme.primary.toArgb()
     val secondaryColorArgb = MaterialTheme.colorScheme.secondary.toArgb()
     val tertiaryColorArgb = MaterialTheme.colorScheme.tertiary.toArgb()
+    val scope = rememberCoroutineScope()
+    var fileCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
+    val fileChooser = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val callback = fileCallback ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val selected = if (result.resultCode == Activity.RESULT_OK) {
+                // Some WebView providers only parse Intent.data, not multi-file ClipData.
+                result.data?.clipData?.let { clip ->
+                    Array(clip.itemCount) { clip.getItemAt(it).uri ?: Uri.EMPTY }
+                } ?: WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+            } else null
+            val readable = withContext(Dispatchers.IO) {
+                selected?.takeIf { uris ->
+                    uris.isNotEmpty() && uris.all { isReadableUploadUri(context, it) }
+                }
+            }
+            if (fileCallback === callback) {
+                fileCallback = null
+                if (result.resultCode == Activity.RESULT_OK && readable == null) {
+                    Toast.makeText(context, R.string.file_selection_unreadable, Toast.LENGTH_SHORT).show()
+                }
+                callback.onReceiveValue(readable)
+            }
+        }
+    }
+
+    webView?.let { view ->
+        LifecycleResumeEffect(view) {
+            view.onResume()
+            onPauseOrDispose {
+                if (webView === view) view.onPause()
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            val callback = fileCallback
+            fileCallback = null
+            callback?.onReceiveValue(null)
+        }
+    }
 
     // Override back navigation to allow WebView to go back in its history
     BackHandler(enabled = isBackEnabled) {
@@ -151,7 +235,36 @@ private fun WebViewWithRefresher(
         // Create and configure WebView
         webView = WebView(context).apply {
             id = webViewId
+            setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+                updateProgress(100)
+                swipeRefreshLayout.isRefreshing = false
+                val download = DownloadHandler.prepare(url, userAgent, contentDisposition, mimeType)
+                    ?: return@setDownloadListener
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                    PackageManager.PERMISSION_GRANTED
+                ) {
+                    if (pendingDownload == null) {
+                        pendingDownload = download
+                        storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    }
+                } else {
+                    try {
+                        DownloadHandler.enqueue(context, download)
+                        Toast.makeText(context, R.string.toast_download_started, Toast.LENGTH_LONG).show()
+                    } catch (_: Exception) {}
+                }
+            }
             webViewClient = object : WebViewClient() {
+
+                override fun doUpdateVisitedHistory(
+                    view: WebView?,
+                    url: String?,
+                    isReload: Boolean
+                ) {
+                    super.doUpdateVisitedHistory(view, url, isReload)
+                    isBackEnabled = view?.canGoBack() == true
+                }
 
                 /**
                  * Handles URL loading. Opens external links in a web browser,
@@ -179,11 +292,6 @@ private fun WebViewWithRefresher(
                     return true
                 }
 
-                override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                    super.onPageStarted(view, url, favicon)
-                    isBackEnabled = view?.canGoBack() == true
-                }
-
                 override fun onReceivedError(
                     view: WebView?, request: WebResourceRequest?, error: WebResourceError?
                 ) {
@@ -193,6 +301,39 @@ private fun WebViewWithRefresher(
 
             }
             webChromeClient = object : WebChromeClient() {
+
+                override fun onShowFileChooser(
+                    webView: WebView,
+                    filePathCallback: ValueCallback<Array<Uri>>,
+                    fileChooserParams: FileChooserParams
+                ): Boolean {
+                    if (fileChooserParams.mode != FileChooserParams.MODE_OPEN &&
+                        fileChooserParams.mode != FileChooserParams.MODE_OPEN_MULTIPLE
+                    ) return false
+                    if (fileCallback != null) {
+                        filePathCallback.onReceiveValue(null)
+                        return true
+                    }
+                    fileCallback = filePathCallback
+                    try {
+                        fileChooser.launch(fileChooserParams.createIntent().apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            putExtra(
+                                Intent.EXTRA_ALLOW_MULTIPLE,
+                                fileChooserParams.mode == FileChooserParams.MODE_OPEN_MULTIPLE
+                            )
+                        })
+                    } catch (_: ActivityNotFoundException) {
+                        fileCallback = null
+                        filePathCallback.onReceiveValue(null)
+                        Toast.makeText(context, R.string.file_picker_unavailable, Toast.LENGTH_SHORT).show()
+                    } catch (_: SecurityException) {
+                        fileCallback = null
+                        filePathCallback.onReceiveValue(null)
+                        Toast.makeText(context, R.string.file_picker_unavailable, Toast.LENGTH_SHORT).show()
+                    }
+                    return true
+                }
 
                 /**
                  * Reports the loading progress of the current page.
@@ -219,6 +360,9 @@ private fun WebViewWithRefresher(
                 domStorageEnabled = true
                 javaScriptEnabled = true
                 setSupportZoom(false)
+                if (WebViewFeature.isFeatureSupported(WebViewFeature.DOWNLOAD_FAVICONS_ENABLED)) {
+                    WebSettingsCompat.setDownloadFaviconsEnabled(this, false)
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     isAlgorithmicDarkeningAllowed =
                         true // Enable algorithmic dark mode on Android Tiramisu+
@@ -233,6 +377,30 @@ private fun WebViewWithRefresher(
         // This is necessary because the factory lambda might not be re-executed
         val view = swipeRefreshLayout.findViewById<WebView>(webViewId)
         webView = view
-    })
+    },
+        onRelease = { swipeRefreshLayout ->
+            swipeRefreshLayout.setOnRefreshListener(null)
+            swipeRefreshLayout.removeView(webView)
+            webView?.destroy()
+            webView = null
+        })
 
+}
+
+private fun isReadableUploadUri(context: Context, uri: Uri): Boolean {
+    if (uri.scheme != ContentResolver.SCHEME_CONTENT ||
+        context.checkUriPermission(
+            uri, Process.myPid(), Process.myUid(), Intent.FLAG_GRANT_READ_URI_PERMISSION
+        ) != PackageManager.PERMISSION_GRANTED ||
+        context.packageManager.resolveContentProvider(uri.authority.orEmpty().substringAfterLast('@'), 0)
+            ?.applicationInfo?.uid == context.applicationInfo.uid
+    ) return false
+
+    return try {
+        context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { true } == true
+    } catch (_: IOException) {
+        false
+    } catch (_: SecurityException) {
+        false
+    }
 }
