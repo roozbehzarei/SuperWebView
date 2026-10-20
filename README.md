@@ -25,9 +25,6 @@ If you already have a website for your business, you don't need to invest in bui
 * **Video & media friendly:** Allows videos and media to play in full screen
 * **Auto dark mode** Adapts automatically to the phone's dark mode settings (targeted website must support this feature)
 
-> [!TIP]
-> For targeting both Android and iOS platforms, use the cross-platform solution [FlutterWebApp](https://github.com/ebadimobina/FlutterWebApp).
-
 ### Build
 
 1. Start [Android Studio](https://developer.android.com/studio) (Quail 2 or newer). Make sure it has [Kotlin Multiplatform](https://plugins.jetbrains.com/plugin/14936-kotlin-multiplatform) plugin installed.
@@ -39,7 +36,11 @@ If you already have a website for your business, you don't need to invest in bui
 7. In *androidApp > src > main > res > values > strings.xml*, update `app_name` string resource to your desired app name.
 8. Use *Asset Studio* to override app icons with your own.
 9. Using the hamburger menu, click on *Build > Generate Signed App Bundle or APK...*.
-10. Follow the *Generate Signed App Bundle or APK* wizard instructions to sign and generate your app APK or bundle.   
+10. Follow the *Generate Signed App Bundle or APK* wizard instructions to sign and generate your app APK or bundle.
 
 > [!IMPORTANT]
 > Ensure your website is "mobile-friendly" before packaging it. Since the app displays your live website, a responsive design ensures the best user experience.
+
+### AI usage disclosure
+
+This project leverages artificial intelligence (AI) tools to assist with tasks such as drafting boilerplate, exploring implementations, and refining documentation. However, this repository is not "vibe coded": no code is blindly generated, committed on vibes, or pushed to production without human oversight. AI functions strictly as a power tool, not an autonomous engineer.
